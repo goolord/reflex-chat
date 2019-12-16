@@ -1,0 +1,29 @@
+.chat-input {
+  display: inline-flex;
+  width: 100%;
+}
+
+.chat-input *:not(:first-child) {
+  margin-left: 20px;
+}
+
+.chat {
+  height: 80%;
+  overflow: auto;
+  overflow:auto; 
+  display:flex; 
+  flex-direction:column-reverse;
+}
+
+.chat div {
+  border-top: 1px solid #dddddd;
+  padding: 0.3em 0;
+}
+
+.chat :first-child {
+  padding-bottom: 0.15em;
+}
+
+main {
+  height: 100vh;
+}
