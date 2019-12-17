@@ -13,6 +13,11 @@ library
                , obelisk-executable-config-lookup
                , obelisk-generated-static
                , text
+               , vector
+               , witherable >= 0.3.4
+               , attoparsec
+               , chronos
+               , dequeue
   exposed-modules:
     Frontend
   ghc-options: -Wall
@@ -27,8 +32,6 @@ executable frontend
                , reflex-dom
                , obelisk-generated-static
                , frontend
-               , witherable >= 0.3.4
-               , attoparsec
   --TODO: Make these ghc-options optional
   ghc-options: -threaded
   if os(darwin)

@@ -18,6 +18,7 @@
 .chat div {
   border-top: 1px solid #dddddd;
   padding: 0.3em 0;
+  font-size: 18px;
 }
 
 .chat :first-child {
@@ -26,4 +27,18 @@
 
 main {
   height: 100vh;
+}
+
+html {
+  background: #eeeeee;
+}
+
+.weak {
+  color: #999999;
+  font-weight: 400;
+  font-size: 0.8em;
+}
+
+br {
+  user-select: none;
 }
