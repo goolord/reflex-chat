@@ -12,6 +12,8 @@ library
                , frontend
                , obelisk-backend
                , obelisk-route
+               , websockets
+               , websockets-snap
   exposed-modules:
     Backend
   ghc-options: -Wall
