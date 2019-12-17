@@ -33,6 +33,7 @@ import Data.Functor
 import Data.Functor.Identity
 import Data.Functor.Sum
 import Data.List (intersperse)
+import GHCJS.DOM.Element (setInnerHTML)
 import Data.List.NonEmpty (nonEmpty)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
@@ -50,6 +51,9 @@ import Obelisk.Route.TH
 import Reflex
 import Reflex.Dom hiding (Command)
 import Text.URI
+import Control.Lens ((^.))
+import Language.Javascript.JSaddle
+  (jsg, js, js1, jss, fun, valToNumber, syncPoint, (<#))
 import qualified Chronos as C
 import qualified Data.Dequeue as DQ
 import qualified Data.Text as T
@@ -70,6 +74,12 @@ getOffset = do
   pure $ case offset of
     0 -> C.Offset 0
     _ -> C.Offset $ offset `div` 60
+
+unsafeRawHtml :: (Prerender js t m, DomBuilder t m) => Text -> m ()
+unsafeRawHtml html = do
+  prerender_ blank $ do
+    (element, _) <- el' "div" blank
+    DOM.liftJSM $ setInnerHTML (_element_raw element) html
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -160,8 +170,12 @@ chat offset mroute = mdo
   command (Command user _ (Me x)) = el "div" $ do
     text user *> text " "
     text x
-  command (Command user time (Html _x)) = el "div" $ do
+  command (Command user time (Html x)) = el "div" $ do
     renderUser user time offset
+    unsafeRawHtml x
+  command (Command user time (JS x)) = el "div" $ do
+    renderUser user time offset
+    prerender_ blank $ void $ DOM.liftJSM $ eval x
   command (Command user time (Send x)) = el "div" $ do 
     renderUser user time offset
     text x
@@ -189,6 +203,7 @@ data CommandType
   | Me Text
   | Send Text
   | Html Text
+  | JS Text
   deriving (Generic, Eq)
 
 instance ToJSON CommandType
@@ -216,6 +231,7 @@ parseCommand = do
           (string "me " *> fmap Me takeText)
       <|> (string "clear" $> Clear)
       <|> (string "html " *> fmap Html takeText)
+      <|> (string "js " *> fmap JS takeText)
       <|> ( do
               rest <- takeText
               pure $ Send $ "/" <> rest
