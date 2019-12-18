@@ -86,7 +86,7 @@ frontend = Frontend
   { _frontend_head = el "title" $ text "Obelisk Minimal Example"
   , _frontend_body = do
       offset <- prerender (pure $ C.Offset 0) $ DOM.liftJSM getOffset
-      route <- pure $ Just "http://localhost:8000" --FIXME get / getConfig
+      route <- (fmap . fmap) T.decodeUtf8 $ getConfig "common/route"
       layoutMain $ chat offset route
   }
 

@@ -1,13 +1,16 @@
 document.addEventListener("DOMContentLoaded", function() {
   let chat_input = document.getElementById('message-input')
+  let chat_button = document.querySelector('.chat-button')
   let sent_messages = []
   let index = 0
-  chat_input.addEventListener("keypress", function (e) {
+  function send_message(e) {
     if (e.keyCode == 13) {
       sent_messages.push(chat_input.value)
       index = sent_messages.length - 1
     }
-  })
+  }
+  chat_input.addEventListener("keypress", send_message)
+  chat_button.addEventListener("click", send_message)
   chat_input.addEventListener("keydown", function (e) {
     if (e.keyCode == 38) {
       if (index > 0) {
