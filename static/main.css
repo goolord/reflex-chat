@@ -15,15 +15,16 @@
   flex-direction:column-reverse;
 }
 
-.chat div {
+.chat-internal div {
   border-top: 1px solid #dddddd;
   padding: 0.3em 0;
   font-size: 18px;
 }
 
-.chat :first-child {
+.chat-internal :first-child {
   padding-bottom: 0.15em;
 }
+
 
 main {
   height: 100vh;

@@ -12,11 +12,11 @@ module Backend where
 import Common.Route
 import Control.Concurrent
 import Control.Concurrent (MVar, readMVar, modifyMVar_)
-import Control.Monad      (forM_, forever)
+import Control.Monad (forM_, forever)
 import Data.Aeson
 import Data.Dependent.Sum (DSum (..))
 import Data.Functor.Identity
-import Data.Text          (Text)
+-- import Data.Text (Text)
 import Network.WebSockets.Snap
 import Obelisk.Backend
 import qualified Data.ByteString as B

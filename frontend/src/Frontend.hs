@@ -58,6 +58,7 @@ import qualified Chronos as C
 import qualified Data.Dequeue as DQ
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Map as M
 import qualified GHCJS.DOM.EventM as GHCJS
 import qualified GHCJS.DOM.Types as DOM
 import qualified GHCJS.Foreign  as F
@@ -135,7 +136,7 @@ chat offset mroute = mdo
           Just uri ->
             prerender (pure $ RawWebSocket never never never never) $ jsonWebSocket (render uri) 
               (WebSocketConfig
-                { _webSocketConfig_send = pure <$> commandE
+                { _webSocketConfig_send = fmap pure commandE
                 , _webSocketConfig_close = never 
                 , _webSocketConfig_reconnect = True
                 , _webSocketConfig_protocols = []
@@ -145,13 +146,15 @@ chat offset mroute = mdo
     attachWith 
       newline
       (current chatBuffer)
-      (catMaybes $ switch $ current $ _webSocket_recv <$> commandSocket)
-  divClass "card chat" $ dyn_ $ fmap renderChat chatBuffer
+      (catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket)
+  divClass "chat card" $ elClass "div" "chat-internal" $ do
+    void $ dynamicList
+      (\_index c _cE -> command c)
+      (const never)
+      (const never)
+      commandE
+      []
   br
-  let renderChat :: [Command] -> m ()
-      renderChat [] = blank
-      renderChat xs = traverse_ command xs
-
   commandE <- divClass "chat-input" $ do
     user <- inputD ("placeholder" =: "User" <> "style" =: "width: 20%;")
     ti <- inputW ("placeholder" =: "Send a message")
@@ -175,6 +178,7 @@ chat offset mroute = mdo
     unsafeRawHtml x
   command (Command user time (JS x)) = el "div" $ do
     renderUser user time offset
+    el "pre" $ el "code" $ text x
     prerender_ blank $ void $ DOM.liftJSM $ eval x
   command (Command user time (Send x)) = el "div" $ do 
     renderUser user time offset
@@ -254,3 +258,46 @@ encodeMinutes m
   | m < 10 = "0" <> tshow m
   | otherwise = tshow m
 
+------------------------------------------------------------------------------
+-- | Dynamic list widget that creates a list that supports the dynamic
+-- addition and removal of items.  This widget is completely general with zero
+-- markup-specific choices.  It handles all the event plumbing and lets you
+-- completely determine the markup.
+dynamicList :: forall a t b m.
+      ( MonadFix m
+      , Adjustable t m
+      , MonadHold t m
+      )
+    => (Int -> a -> Event t a -> m b)
+    -- ^ Widget used to display each item
+    -> (b -> Event t ())
+    -- ^ Function that gets a remove event from the return value of each item
+    -> (b -> Event t a)
+    -- ^ Event that adds a new item to the list that is somehow based on an
+    -- existing item.  If you don't want anything like this, use `const never`.
+    -> Event t a
+    -- ^ Event that adds a new item to the list that is not based on an
+    -- existing item.
+    -> [a]
+    -- ^ Initial list of items
+    -> m (Dynamic t [b])
+dynamicList w removeEvent addFunc addEvent initList = do
+    let initMap = M.fromList $ zip [0..] initList
+    rec 
+      let vals :: Event t (Map Int (Maybe a))
+          vals = mergeWith (<>)
+            [ attachWith addNew (current res) addEvent
+            , addSpecific (current res)
+            , remove (current res)
+            ]
+      res <- listWithKeyShallowDiff initMap vals w
+    pure $ M.elems <$> res
+  where
+    addSpecific res = switch (foo <$> res)
+    foo m = leftmost $ map (fmap (addNew m) . addFunc) $ M.elems m
+    addNew m a = M.singleton k (Just a)
+      where
+        k = if M.null m then 0 else fst (M.findMax m) + 1
+    remove res = switch (mergeWith (<>) . map f . M.toList <$> res)
+      where
+        f (k,b) = M.singleton k Nothing <$ removeEvent b
