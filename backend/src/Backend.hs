@@ -28,7 +28,7 @@ backend = Backend
   { _backend_run = \serve -> do
       webSocketChatState <- newMVar newServerState
       serve $ \case
-        BackendRoute_Missing :=> Identity () -> return ()
+        BackendRoute_Missing :=> Identity () -> pure ()
         BackendRoute_WebSocketChat :=> Identity () -> do
           runWebSocketsSnap (application webSocketChatState)
 

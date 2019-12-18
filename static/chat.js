@@ -24,7 +24,5 @@ document.addEventListener("DOMContentLoaded", function() {
       }
       chat_input.value = sent_messages[index]
     }
-    console.log(sent_messages)
-    console.log(index)
   })
 });

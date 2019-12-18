@@ -17,6 +17,7 @@
 
 module Frontend where
 
+import Prelude hiding (filter)
 import Common.Api
 import Common.Route
 import Control.Applicative
@@ -146,17 +147,18 @@ chat offset mroute = mdo
                 , _webSocketConfig_protocols = []
                 }
               )
+  let socketCommands = (catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket)
   chatBuffer <- holdDyn [] $
     attachWith 
       newline
       (current chatBuffer)
-      (catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket)
+      socketCommands
   divClass "chat card" $ elClass "div" "chat-internal" $ do
     void $ dynamicList
       (\_index c _cE -> command c)
+      (\_ -> filter (\x -> commandType x == Clear) socketCommands $> () )
       (const never)
-      (const never)
-      commandE
+      socketCommands
       []
   br
   commandE <- divClass "chat-input" $ do
@@ -212,7 +214,7 @@ data CommandType
   | Send Text
   | Html Text
   | JS Text
-  deriving (Generic, Eq)
+  deriving (Generic, Eq, Show)
 
 instance ToJSON CommandType
 instance FromJSON CommandType
@@ -222,7 +224,7 @@ data Command = Command
   , commandTime :: C.Time 
   , commandType :: CommandType
   }
-  deriving (Generic)
+  deriving (Generic, Show)
 
 instance ToJSON Command
 instance FromJSON Command
