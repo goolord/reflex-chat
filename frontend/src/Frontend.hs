@@ -62,9 +62,8 @@ import qualified Data.Map as M
 import qualified GHCJS.DOM.EventM as GHCJS
 import qualified GHCJS.DOM.Types as DOM
 import qualified GHCJS.Foreign  as F
-import qualified GHCJS.Types    as T
+import qualified GHCJS.Types as T
 import qualified Obelisk.ExecutableConfig.Lookup as Cfg
-
 
 js_offset :: DOM.JSM T.JSVal
 js_offset = eval ("new Date().getTimezoneOffset()" :: String)
@@ -102,6 +101,10 @@ css :: DomBuilder t m => Text -> m ()
 css x = 
   elAttr "link" ("rel" =: "stylesheet" <> "type" =: "text/css" <> "href" =: x) blank
 
+staticJs :: DomBuilder t m => Text -> m ()
+staticJs x =
+  elAttr "script" ("src" =: x) blank
+
 chat :: forall t m js.
   ( PostBuild t m
   , DomBuilder t m
@@ -112,6 +115,7 @@ chat :: forall t m js.
   -> Maybe Text
   -> m ()
 chat offset mroute = mdo
+  staticJs $ static @"chat.js"
   br
   commandSocket :: Dynamic t (RawWebSocket t (Maybe Command)) <- 
     case checkEncoder backendRouteEncoder of
@@ -157,7 +161,7 @@ chat offset mroute = mdo
   br
   commandE <- divClass "chat-input" $ do
     user <- inputD ("placeholder" =: "User" <> "style" =: "width: 20%;")
-    ti <- inputW ("placeholder" =: "Send a message")
+    ti <- inputW ("placeholder" =: "Send a message" <> "id" =: "message-input")
     fmap (switch . current) . prerender (pure never) $ performEvent $ ffor ti $ \input -> do
       let commandType = either (Send . T.pack) id $ parseOnly parseCommand input
       now <- liftIO C.now
@@ -172,17 +176,17 @@ chat offset mroute = mdo
   command (Command  _ _ Clear) = blank
   command (Command user _ (Me x)) = el "div" $ do
     text user *> text " "
-    text x
+    el "div" $ text x
   command (Command user time (Html x)) = el "div" $ do
     renderUser user time offset
-    unsafeRawHtml x
+    el "div" $ unsafeRawHtml x
   command (Command user time (JS x)) = el "div" $ do
     renderUser user time offset
     el "pre" $ el "code" $ text x
-    prerender_ blank $ void $ DOM.liftJSM $ eval x
+    el "div" $ prerender_ blank $ void $ DOM.liftJSM $ eval x
   command (Command user time (Send x)) = el "div" $ do 
     renderUser user time offset
-    text x
+    el "div" $ text x
 
 inputD :: (DomBuilder t m) => Map AttributeName Text -> m (Dynamic t T.Text)
 inputD attrs = do
