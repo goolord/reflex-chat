@@ -93,7 +93,7 @@ frontend = Frontend
 
 layoutMain :: (DomBuilder t m) => m a -> m a
 layoutMain child = do
-  css $ static @"chota.css"
+  css "https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css"
   css $ static @"main.css"
   elClass "main" "container" $ do
     child
@@ -163,8 +163,8 @@ chat offset mroute = mdo
       []
   br
   commandE <- divClass "chat-input" $ do
-    user <- inputD ("placeholder" =: "User" <> "style" =: "width: 20%;")
-    ti <- inputW ("placeholder" =: "Send a message" <> "id" =: "message-input")
+    user <- inputD ("placeholder" =: "User" <> "style" =: "width: 20%;" <> "class" =: "input")
+    ti <- inputW ("placeholder" =: "Send a message" <> "id" =: "message-input" <> "class" =: "input")
     fmap (switch . current) . prerender (pure never) $ performEvent $ ffor ti $ \input -> do
       let commandType = either (Send . T.pack) id $ parseOnly parseCommand input
       now <- liftIO C.now
@@ -205,7 +205,7 @@ inputW attrs = mdo
   input <- inputElement $ def
     & inputElementConfig_setValue .~ (send $> "")
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ attrs
-  (send2, _) <- elAttr' "button" ("class" =: "chat-button") $ text "Send"
+  (send2, _) <- elAttr' "button" ("class" =: "chat-button button is-primary") $ text "Send"
   -- inputElement with content reset on send
   pure $ tag (current $ _inputElement_value input) send
 
