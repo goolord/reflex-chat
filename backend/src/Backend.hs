@@ -13,10 +13,9 @@ import Common.Route
 import Control.Concurrent
 import Control.Concurrent (MVar, readMVar, modifyMVar_)
 import Control.Monad (forM_, forever)
-import Data.Aeson
+-- import Data.Aeson
 import Data.Dependent.Sum (DSum (..))
 import Data.Functor.Identity
--- import Data.Text (Text)
 import Network.WebSockets.Snap
 import Obelisk.Backend
 import qualified Data.ByteString as B
@@ -52,15 +51,10 @@ application state pending = do
   conn <- WS.acceptRequest pending
   modifyMVar_ state (pure . (:) conn)
   WS.forkPingThread conn 30
-  msgbs <- WS.receiveData conn :: IO B.ByteString
-  WS.sendTextData conn msgbs
   talk conn state
 
 talk :: WS.Connection -> MVar ServerState -> IO b
 talk conn state = forever $ do
   msgbs <- WS.receiveData conn :: IO B.ByteString
   readMVar state >>= broadcast msgbs
-
-options :: Options
-options = defaultOptions -- { tagSingleConstructors = True }
 

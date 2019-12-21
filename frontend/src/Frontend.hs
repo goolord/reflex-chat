@@ -112,7 +112,8 @@ chat :: forall t m js.
   , MonadHold t m
   , MonadFix m
   , Prerender js t m
-  ) => Dynamic t C.Offset 
+  ) 
+  => Dynamic t C.Offset 
   -> Maybe Text
   -> m ()
 chat offset mroute = mdo
@@ -147,7 +148,7 @@ chat offset mroute = mdo
                 , _webSocketConfig_protocols = []
                 }
               )
-  let socketCommands = (catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket)
+  let socketCommands = catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket
   chatBuffer <- holdDyn [] $
     attachWith 
       newline
