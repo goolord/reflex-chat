@@ -151,17 +151,16 @@ chat offset mroute = mdo
   let socketCommands = catMaybes $ switch $ current $ fmap _webSocket_recv commandSocket
   chatBuffer <- holdDyn [] $
     attachWith 
-      newline
+      consCommand
       (current chatBuffer)
       socketCommands
-  divClass "chat card" $ elClass "div" "chat-internal" $ do
+  divClass "chat box" $ elClass "div" "chat-internal" $ do
     void $ dynamicList
-      (\_index c _cE -> command c)
+      (\_index c _cE -> renderCommand c)
       (\_ -> filter (\x -> commandType x == Clear) socketCommands $> () )
       (const never)
       socketCommands
       []
-  br
   commandE <- divClass "chat-input" $ do
     user <- inputD ("placeholder" =: "User" <> "style" =: "width: 20%;" <> "class" =: "input")
     ti <- inputW ("placeholder" =: "Send a message" <> "id" =: "message-input" <> "class" =: "input")
@@ -172,22 +171,22 @@ chat offset mroute = mdo
       pure $ Command user' now commandType
   blank
   where
-  newline :: [Command] -> Command -> [Command]
-  newline _ (Command _ _ Clear) = []
-  newline as a = a : as
-  command :: Command -> m ()
-  command (Command  _ _ Clear) = blank
-  command (Command user _ (Me x)) = el "div" $ do
+  consCommand :: [Command] -> Command -> [Command]
+  consCommand _ (Command _ _ Clear) = []
+  consCommand as a = a : as
+  renderCommand :: Command -> m ()
+  renderCommand (Command  _ _ Clear) = blank
+  renderCommand (Command user _ (Me x)) = el "div" $ do
     text user *> text " "
     el "div" $ text x
-  command (Command user time (Html x)) = el "div" $ do
+  renderCommand (Command user time (Html x)) = el "div" $ do
     renderUser user time offset
     el "div" $ unsafeRawHtml x
-  command (Command user time (JS x)) = el "div" $ do
+  renderCommand (Command user time (JS x)) = el "div" $ do
     renderUser user time offset
     el "pre" $ el "code" $ text x
     el "div" $ prerender_ blank $ void $ DOM.liftJSM $ eval x
-  command (Command user time (Send x)) = el "div" $ do 
+  renderCommand (Command user time (Send x)) = el "div" $ do 
     renderUser user time offset
     el "div" $ text x
 
@@ -195,18 +194,15 @@ inputD :: (DomBuilder t m) => Map AttributeName Text -> m (Dynamic t T.Text)
 inputD attrs = do
   input <- inputElement $ def
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ attrs
-    -- inputElement with content reset on send
   pure $ value input
 
 inputW :: (DomBuilder t m, MonadFix m) => Map AttributeName Text -> m (Event t T.Text)
 inputW attrs = mdo
   let send = keypress Enter input <> domEvent Click send2
-      -- send signal firing on *return* key press
   input <- inputElement $ def
     & inputElementConfig_setValue .~ (send $> "")
     & inputElementConfig_elementConfig . elementConfig_initialAttributes .~ attrs
-  (send2, _) <- elAttr' "button" ("class" =: "chat-button button is-primary") $ text "Send"
-  -- inputElement with content reset on send
+  (send2, _) <- elAttr' "button" ("class" =: "chat-button button is-link") $ text "Send"
   pure $ tag (current $ _inputElement_value input) send
 
 data CommandType
