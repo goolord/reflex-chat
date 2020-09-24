@@ -53,6 +53,7 @@ import Reflex
 import Reflex.Dom hiding (Command)
 import Text.URI
 import Control.Lens ((^.))
+import GHC.Exception (SomeException, displayException)
 import Language.Javascript.JSaddle
   (jsg, js, js1, jss, fun, valToNumber, syncPoint, (<#))
 import qualified Chronos as C
@@ -127,7 +128,8 @@ chat offset mroute = mdo
       Right encoder -> do
         let wsPath = fst $ encode encoder $ InL BackendRoute_WebSocketChat :/ ()
         let mUri = do
-            uri' <- mkURI =<< mroute
+            route <- (\x -> fromMaybe x $ T.stripSuffix "\n" x) <$> mroute
+            uri' <- mkURI route
             pathPiece <- nonEmpty =<< mapM mkPathPiece wsPath
             wsScheme <- case uriScheme uri' of
               rtextScheme | rtextScheme == mkScheme "https" -> mkScheme "wss"
@@ -138,7 +140,7 @@ chat offset mroute = mdo
               , uriScheme = Just wsScheme
               }
         case mUri of
-          Nothing -> fail $ "no uri: " <> show mroute
+          Nothing -> fail $ "no uri: " <> show mroute <> " " <> either displayException show (mkURI $ fromMaybe mempty mroute :: Either SomeException URI)
           Just uri ->
             prerender (pure $ RawWebSocket never never never never) $ jsonWebSocket (render uri) 
               (WebSocketConfig
